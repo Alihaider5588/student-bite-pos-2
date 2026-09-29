@@ -240,11 +240,11 @@ tbody tr:last-child td{border-bottom:none}
 <div class="loginBox">
 <img id="loginLogo2" class="loginLogoImg" alt="Student Bite">
 <p class="muted" style="text-align:center">POS & Business Management</p>
-<input id="loginUser" placeholder="Username" autocomplete="username">
+<input id="loginUser" type="email" placeholder="Firebase Email" autocomplete="username">
 <input id="loginPass" type="password" placeholder="Password" autocomplete="current-password">
-<p id="loginError">Galat username ya password.</p>
+<p id="loginError">Email ya password check karein.</p>
 <button class="primary" style="width:100%;margin-top:7px" onclick="login()">Login</button>
-<p class="muted" style="text-align:center">Default: admin / 1234</p>
+<p class="muted" style="text-align:center">Firebase Authentication Email / Password se login karein.</p>
 </div>
 </div>
 
@@ -407,8 +407,9 @@ tbody tr:last-child td{border-bottom:none}
 
 <div id="printArea"><div class="receipt" id="receipt"></div><div class="reportSheet" id="reportPrint"></div></div>
 
-<!-- Firebase Realtime Database (compat SDK) -->
+<!-- Firebase Authentication + Realtime Database (compat SDK) -->
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
 <script>
 const firebaseConfig = {
@@ -421,7 +422,11 @@ const firebaseConfig = {
   appId: "1:122848794605:web:78f53a489736508c5ab9e4"
 };
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
+let firebaseUser = null;
+let authReady = false;
+let firebaseInitStarted = false;
 const DB_PATH = "studentBitePOS";
 // One-time global reset: orders/history, expenses, purchases, inventory -> 0 (menu & login kept)
 const RESET_VERSION = "zero-reset-2026-09-28";
@@ -500,17 +505,20 @@ function applyRemoteData(data){
   applyingRemoteData=false;
 }
 async function initFirebase(){
+  if(firebaseInitStarted) return;
+  firebaseInitStarted=true;
   try{
     const ref=db.ref(DB_PATH);
     const snap=await ref.once("value");
     if(!snap.exists()){
-      // First device: move the existing browser data into the central database.
+      // First authenticated device: move the existing browser data into the central database.
       await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
     }else{
       const remote=snap.val();
       if(remote.resetVersion!==RESET_VERSION){
-        // First open after this update: wipe saved orders, pending orders, expenses, purchases, inventory. Keep menu.
+        // First open after this update: wipe saved orders, pending orders, expenses, purchases, inventory. Keep menu/deals.
         if(Array.isArray(remote.menu)&&remote.menu.length) menu=remote.menu;
+        if(Array.isArray(remote.deals)&&remote.deals.length) deals=remote.deals;
         stock=[];purchases=[];expenses=[];sales=[];pendingOrders=[];
         cacheLocalData();
         await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
@@ -527,7 +535,6 @@ async function initFirebase(){
     ref.on("value",snap=>{
       if(!snap.exists())return;
       if(editingOrderId!==null || cart.length>0){
-        // Keep the current in-progress order safe; remote data will be applied after it is saved/cancelled.
         setSyncStatus("● Synced • local order editing");
         return;
       }
@@ -535,34 +542,99 @@ async function initFirebase(){
       setSyncStatus("● Synced");
       if(typeof renderAll==="function") renderAll();
     },err=>{console.error("Firebase listener failed",err);setSyncStatus("● Sync error")});
+    startApp();
   }catch(err){
     console.error("Firebase initialization failed",err);
     firebaseFailed=true;
     setSyncStatus("● Offline / Local");
-    alert("Firebase connect nahi ho saka. POS local data ke saath open hogi; internet/Firebase rules check karein.");
+    const code=err&&err.code?err.code:"";
+    if(code==="PERMISSION_DENIED" || code==="permission-denied"){
+      alert("Firebase database access denied. Pehle Firebase Authentication login confirm karein aur phir Database Rules mein auth != null use karein.");
+    }else{
+      alert("Firebase connect nahi ho saka. Internet/Firebase configuration check karein.");
+    }
   }
-  if(logged)startApp();
 }
-initFirebase();
-function login(){
-  if(!firebaseReady && !firebaseFailed){
-    return alert("Firebase abhi connect ho raha hai. 2-3 seconds wait karke dobara Login karein.");
-  }
-  if(loginUser.value===credentials.username && loginPass.value===credentials.password){
-    localStorage.sb_logged="1";logged=true;loginError.style.display="none";startApp()
-  }else{
+
+function showAuthError(err){
+  console.error("Firebase login failed",err);
+  const code=err&&err.code?err.code:"";
+  const messages={
+    "auth/invalid-email":"Email address sahi nahi hai.",
+    "auth/user-not-found":"Firebase mein is email ka user nahi mila.",
+    "auth/wrong-password":"Password ghalat hai.",
+    "auth/invalid-credential":"Email ya password ghalat hai.",
+    "auth/too-many-requests":"Bohat zyada login attempts hue hain. Thori der baad dobara try karein.",
+    "auth/network-request-failed":"Internet connection check karein.",
+    "auth/user-disabled":"Ye Firebase user disabled hai.",
+    "auth/operation-not-allowed":"Firebase Authentication mein Email/Password enabled nahi hai."
+  };
+  loginError.textContent=messages[code]||("Login failed: "+(err&&err.message?err.message:"Unknown error"));
+  loginError.style.display="block";
+}
+
+async function login(){
+  const email=loginUser.value.trim();
+  const password=loginPass.value;
+  loginError.style.display="none";
+  if(!email||!password){
+    loginError.textContent="Email aur password dono enter karein.";
     loginError.style.display="block";
+    return;
+  }
+  if(!authReady){
+    loginError.textContent="Firebase Authentication abhi load ho rahi hai. 2-3 seconds wait karke dobara Login karein.";
+    loginError.style.display="block";
+    return;
+  }
+  const btn=document.querySelector('#loginScreen button.primary');
+  if(btn){btn.disabled=true;btn.textContent="Logging in…";}
+  try{
+    await auth.signInWithEmailAndPassword(email,password);
+  }catch(err){
+    showAuthError(err);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="Login";}
   }
 }
-function logout(){localStorage.sb_logged="0";logged=false;app.style.display="none";loginScreen.style.display="flex";loginPass.value=""}
+
+async function logout(){
+  try{await auth.signOut();}catch(err){console.error("Logout failed",err)}
+  localStorage.sb_logged="0";
+  logged=false;
+  firebaseReady=false;
+  firebaseInitStarted=false;
+  app.style.display="none";
+  loginScreen.style.display="flex";
+  loginPass.value="";
+}
+
 function startApp(){
-  loginScreen.style.display="none";app.style.display="block";userLabel.textContent=credentials.username;
+  loginScreen.style.display="none";app.style.display="block";
+  userLabel.textContent=firebaseUser?.email||loginUser.value.trim()||"User";
   if(document.getElementById("reportMonth"))reportMonth.value=today().slice(0,7);
   if(document.getElementById("reportDate"))reportDate.value=today();
   if(document.getElementById("reportYear"))reportYear.value=new Date().getFullYear();
-  syncReportInputs();renderAll();renderSettings()
+  syncReportInputs();renderAll();renderSettings();
 }
-if(logged)startApp();
+
+// Firebase Auth controls access to the POS. Existing Firebase Auth sessions are restored automatically.
+auth.onAuthStateChanged(async user=>{
+  authReady=true;
+  firebaseUser=user||null;
+  if(user){
+    logged=true;
+    localStorage.sb_logged="1";
+    await initFirebase();
+  }else{
+    logged=false;
+    localStorage.sb_logged="0";
+    firebaseReady=false;
+    firebaseInitStarted=false;
+    app.style.display="none";
+    loginScreen.style.display="flex";
+  }
+});
 
 function showPage(id,btn){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");renderAll()}
 function money(n){return "Rs "+Number(n||0).toLocaleString("en-PK")}
