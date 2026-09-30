@@ -199,6 +199,7 @@ nav button.active{background:var(--yellow);color:var(--black);border-color:var(-
 .row{border-bottom:1px dashed #e6e6e6}
 .emptyCart{background:repeating-linear-gradient(45deg,#fafafa,#fafafa 10px,#f5f5f5 10px,#f5f5f5 20px);border-radius:16px}
 .billPreview{border-radius:16px}
+.customAddBox{margin:10px 0;padding:10px;border:1px dashed #ddd;border-radius:12px;background:#fffdf0}.customAddBox .formgrid{grid-template-columns:1.5fr 1fr auto}
 
 /* forms */
 input,select{font-family:inherit;border:1.5px solid #e3e3e3;border-radius:12px;padding:11px 13px;transition:border-color .2s,box-shadow .2s,background .2s}
@@ -283,15 +284,18 @@ tbody tr:last-child td{border-bottom:none}
 <section id="pos" class="page">
 <h2>POS / Billing</h2>
 <div class="grid"><div><div class="sectionTitle"><h3>Menu & Deals</h3><div class="actions"><button id="posItemsModeBtn" class="yellow" onclick="setPosMode('items')">🍔 Items</button><button id="posDealsModeBtn" onclick="setPosMode('deals')">🎁 Deals</button></div></div><div id="catBar" class="catBar"></div><div id="posMenu" class="menu"></div><div id="posDeals" class="menu" style="display:none"></div></div>
-<div class="order"><div id="editOrderBanner" class="editBanner"><b>✏️ Editing Order</b><br><span id="editOrderText">You are editing an existing order.</span></div><h3>Current Order <span class="badge catGroup" id="cartItemCount">0</span></h3><div id="cartList"></div>
-<div class="formgrid"><div><label>Discount</label><input id="discount" type="number" min="0" value="0" oninput="renderCart()"></div>
+<div class="order"><div id="editOrderBanner" class="editBanner"><b>✏️ Editing Order</b><br><span id="editOrderText">You are editing an existing order.</span></div><div class="sectionTitle"><h3>Current Order <span class="badge catGroup" id="cartItemCount">0</span></h3><button class="yellow" onclick="toggleCustomAdd()">➕ Custom</button></div>
+<div id="customAddBox" class="customAddBox" style="display:none"><div class="formgrid"><div><label>Custom item / extra</label><input id="customName" placeholder="Naam likhein"></div><div><label>Amount</label><input id="customAmount" type="number" min="0" step="0.01" placeholder="0"></div><button class="primary" onclick="addCustomToCart()">Add</button></div></div><div id="cartList"></div>
+<div class="formgrid"><div><label>Bill Date & Time</label><input id="orderDateTime" type="datetime-local" onchange="orderDateTimeValue=this.value"></div>
+<div><label>Discount</label><input id="discount" type="number" min="0" value="0" oninput="renderCart()"></div>
+<div><label>Tip</label><input id="tip" type="number" min="0" value="0" oninput="renderCart()"></div>
 <div><label>Payment</label><select id="payment"><option>Cash</option><option>Card</option><option>Online</option></select></div></div>
-<h3>Subtotal: <span id="subtotal">Rs 0</span></h3><h3>Discount: <span id="discountShow">Rs 0</span></h3><h2>Total: <span id="total">Rs 0</span></h2>
+<h3>Subtotal: <span id="subtotal">Rs 0</span></h3><h3>Discount: <span id="discountShow">Rs 0</span></h3><h3>Tip: <span id="tipShow">Rs 0</span></h3><h2>Total: <span id="total">Rs 0</span></h2>
 <div class="actions"><button class="primary" onclick="completeOrder(true)">Save & Print Bill</button><button class="yellow" onclick="completeOrder(false)">Save Order</button><button onclick="clearCart()">Clear</button><button id="cancelEditOrderBtn" onclick="cancelEditOrder()" style="display:none">Cancel Edit</button></div>
 </div></div>
 <div class="panel orderHistory">
-  <div class="sectionTitle"><h3>Order History / Closing</h3><div class="actions"><button class="yellow" onclick="closeDayAndSaveHistory()">🌙 Save & Close Today's Orders</button><button onclick="renderOrderHistory()">↻ Refresh</button></div></div>
-  <p class="reportNote">Din bhar ke orders pehle <b>pending</b> rahenge. Raat ko closing (1–2 AM) par <b>Save & Close Today's Orders</b> dabao; uske baad orders permanent Order History/Reports mein save honge.</p>
+  <div class="sectionTitle"><h3>Order History / Closing</h3><div class="actions"><button class="yellow" onclick="closeDayAndSaveHistory()">🌙 Save & Close Today's Records</button><button onclick="renderOrderHistory()">↻ Refresh</button></div></div>
+  <p class="reportNote">Din bhar ke Sales, Purchases aur Expenses <b>pending</b> rahenge. Raat ko closing (1–2 AM) par <b>Save & Close Today's Records</b> dabao; uske baad ye permanent history/reports mein save honge. Inventory current stock balance hota hai, is liye woh closing par reset nahi hoga.</p>
   <div id="pendingOrdersSection"></div>
   <div style="margin-top:18px"><h4>Saved Order History</h4></div>
   <div class="historyRow historyHead"><span>Date / Time</span><span>Bill / Items</span><span>Payment</span><span>Total</span><span>Actions</span></div>
@@ -322,25 +326,25 @@ tbody tr:last-child td{border-bottom:none}
 <h2>Inventory</h2>
 <div class="panel"><div class="formgrid">
 <div><label>Item</label><input id="stockName"></div><div><label>Current Qty</label><input id="stockQty" type="number" step="0.01"></div><div><label>Unit</label><input id="stockUnit" placeholder="kg / litre / pcs"></div><div><label>Minimum Qty</label><input id="stockMin" type="number" step="0.01"></div>
-<button class="primary" onclick="addStock()">Add / Update</button></div></div>
-<table style="margin-top:12px"><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Min</th><th>Adjust</th><th>Status</th></tr></thead><tbody id="stockTable"></tbody></table>
+<button id="stockFormBtn" class="primary" onclick="addStock()">Add / Update</button><button id="stockCancelBtn" onclick="cancelEditStock()" style="display:none">Cancel Edit</button></div></div>
+<table style="margin-top:12px"><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Min</th><th>Adjust</th><th>Status</th><th>Action</th></tr></thead><tbody id="stockTable"></tbody></table>
 </section>
 
 <section id="purchases" class="page">
 <h2>Purchase Record</h2>
 <div class="panel"><div class="formgrid">
 <div><label>Item</label><input id="purchaseItem" placeholder="e.g. Chicken"></div><div><label>Quantity</label><input id="purchaseQty" type="number" step="0.01"></div><div><label>Unit</label><input id="purchaseUnit" placeholder="kg / pcs"></div><div><label>Total Cost</label><input id="purchaseCost" type="number" step="0.01"></div><div><label>Supplier</label><input id="purchaseSupplier"></div>
-<button class="primary" onclick="addPurchase()">Save Purchase</button></div>
+<button id="purchaseSaveBtn" class="primary" onclick="addPurchase()">Save Purchase</button><button id="purchaseCancelBtn" onclick="cancelEditPurchase()" style="display:none">Cancel Edit</button></div>
 <p class="muted">Purchase save karne par agar same inventory item mil jaye to uski quantity automatically add hogi.</p></div>
-<table style="margin-top:12px"><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Cost</th><th>Supplier</th></tr></thead><tbody id="purchaseTable"></tbody></table>
+<table style="margin-top:12px"><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>Cost</th><th>Supplier</th><th>Action</th></tr></thead><tbody id="purchaseTable"></tbody></table>
 </section>
 
 <section id="expenses" class="page">
 <h2>Expenses</h2>
 <div class="panel"><div class="formgrid">
 <div><label>Description</label><input id="expName"></div><div><label>Amount</label><input id="expAmount" type="number"></div><div><label>Category</label><select id="expCat"><option>Electricity</option><option>Gas</option><option>Rent</option><option>Salary</option><option>Transport</option><option>Cleaning</option><option>Marketing</option><option>Miscellaneous</option></select></div>
-<button class="primary" onclick="addExpense()">Add Expense</button></div></div>
-<table style="margin-top:12px"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr></thead><tbody id="expTable"></tbody></table>
+<button id="expenseSaveBtn" class="primary" onclick="addExpense()">Add Expense</button><button id="expenseCancelBtn" onclick="cancelEditExpense()" style="display:none">Cancel Edit</button></div></div>
+<table style="margin-top:12px"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Action</th></tr></thead><tbody id="expTable"></tbody></table>
 </section>
 
 <section id="reports" class="page">
@@ -454,11 +458,11 @@ const DEFAULT_MENU=[
 ].map((x,i)=>({id:i+1,name:x[0],cat:x[1],price:x[2]}));
 
 // Fresh clean build: menu stays available, all transactional amounts/history start at zero.
-let menu=load("sb_menu",DEFAULT_MENU),deals=load("sb_deals",DEFAULT_DEALS),stock=[],purchases=[],expenses=[],sales=[],pendingOrders=[],cart=[];
+let menu=load("sb_menu",DEFAULT_MENU),deals=load("sb_deals",DEFAULT_DEALS),stock=[],purchases=[],expenses=[],sales=[],pendingOrders=[],pendingPurchases=[],pendingExpenses=[],cart=[];
 if(!Array.isArray(deals)||deals.length===0){deals=DEFAULT_DEALS.map(d=>JSON.parse(JSON.stringify(d)));localStorage.sb_deals=JSON.stringify(deals)}
 if(!Array.isArray(menu)||menu.length===0){menu=DEFAULT_MENU.map(x=>({...x}));localStorage.sb_menu=JSON.stringify(menu)}
 // Do not reuse old transactional data stored in this browser for this clean build.
-localStorage.removeItem("sb_stock");localStorage.removeItem("sb_purchases");localStorage.removeItem("sb_expenses");localStorage.removeItem("sb_sales");localStorage.removeItem("sb_pending_orders");
+localStorage.removeItem("sb_stock");localStorage.removeItem("sb_purchases");localStorage.removeItem("sb_expenses");localStorage.removeItem("sb_sales");localStorage.removeItem("sb_pending_orders");localStorage.removeItem("sb_pending_purchases");localStorage.removeItem("sb_pending_expenses");
 let logged=localStorage.sb_logged==="1";
 let credentials=load("sb_credentials",{username:"admin",password:"1234"});
 
@@ -470,13 +474,15 @@ function cacheLocalData(){
   localStorage.sb_expenses=JSON.stringify(expenses);
   localStorage.sb_sales=JSON.stringify(sales);
   localStorage.sb_pending_orders=JSON.stringify(pendingOrders);
+  localStorage.sb_pending_purchases=JSON.stringify(pendingPurchases);
+  localStorage.sb_pending_expenses=JSON.stringify(pendingExpenses);
   localStorage.sb_deals=JSON.stringify(deals);
 }
 function save(){
   cacheLocalData();
   if(firebaseReady && !applyingRemoteData){
     const payload={
-      menu,deals,stock,purchases,expenses,sales,pendingOrders,
+      menu,deals,stock,purchases,expenses,sales,pendingOrders,pendingPurchases,pendingExpenses,
       resetVersion: RESET_VERSION,
       updatedAt: firebase.database.ServerValue.TIMESTAMP
     };
@@ -501,6 +507,8 @@ function applyRemoteData(data){
   if(Array.isArray(data.expenses)) expenses=data.expenses;
   if(Array.isArray(data.sales)) sales=data.sales;
   if(Array.isArray(data.pendingOrders)) pendingOrders=data.pendingOrders;
+  if(Array.isArray(data.pendingPurchases)) pendingPurchases=data.pendingPurchases;
+  if(Array.isArray(data.pendingExpenses)) pendingExpenses=data.pendingExpenses;
   cacheLocalData();
   applyingRemoteData=false;
 }
@@ -512,16 +520,16 @@ async function initFirebase(){
     const snap=await ref.once("value");
     if(!snap.exists()){
       // First authenticated device: move the existing browser data into the central database.
-      await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+      await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,pendingPurchases,pendingExpenses,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
     }else{
       const remote=snap.val();
       if(remote.resetVersion!==RESET_VERSION){
         // First open after this update: wipe saved orders, pending orders, expenses, purchases, inventory. Keep menu/deals.
         if(Array.isArray(remote.menu)&&remote.menu.length) menu=remote.menu;
         if(Array.isArray(remote.deals)&&remote.deals.length) deals=remote.deals;
-        stock=[];purchases=[];expenses=[];sales=[];pendingOrders=[];
+        stock=[];purchases=[];expenses=[];sales=[];pendingOrders=[];pendingPurchases=[];pendingExpenses=[];
         cacheLocalData();
-        await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
+        await ref.set({menu,deals,stock,purchases,expenses,sales,pendingOrders,pendingPurchases,pendingExpenses,resetVersion:RESET_VERSION,updatedAt:firebase.database.ServerValue.TIMESTAMP});
       }else{
         applyRemoteData(remote);
         if(!Array.isArray(remote.deals)){
@@ -647,6 +655,18 @@ function monthOf(d){return String(d).slice(0,7)}
 
 let posCat="All";
 let posMode="items";
+let orderDateTimeValue="";
+function toDateTimeLocalValue(d=new Date()){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+  const h=String(d.getHours()).padStart(2,"0"),mi=String(d.getMinutes()).padStart(2,"0");
+  return `${y}-${m}-${day}T${h}:${mi}`;
+}
+function ensureOrderDateTime(){if(!orderDateTimeValue)orderDateTimeValue=toDateTimeLocalValue();}
+function orderDateTimeISO(){
+  ensureOrderDateTime();
+  const d=new Date(orderDateTimeValue);
+  return Number.isNaN(d.getTime())?new Date().toISOString():d.toISOString();
+}
 function renderAll(){
   [renderPOS,renderMenu,renderDeals,renderStock,renderPurchases,renderExpenses,renderReports,dashboard,renderOrderHistory,updateEditBanner].forEach(fn=>{
     try{fn()}catch(e){console.error(fn.name,"failed:",e)}
@@ -664,7 +684,7 @@ function setPosMode(mode){
   if(mode==="deals")renderPOSDeals();
   else renderPOSItems();
 }
-function renderPOS(){setPosMode(posMode);renderCart()}
+function renderPOS(){setPosMode(posMode);let dt=document.getElementById("orderDateTime");if(dt&&orderDateTimeValue)dt.value=orderDateTimeValue;renderCart()}
 function renderPOSItems(){
   let cats=["All",...new Set(menu.map(m=>m.cat))];
   catBar.innerHTML=cats.map(c=>`<button class="${c===posCat?'active':''}" onclick="setPosCat('${c.replace(/'/g,"\\'")}')">${c}</button>`).join("");
@@ -687,42 +707,56 @@ function renderPOSDeals(){
   }).join("")||`<div class="emptyCart">No deals added yet. Menu → Deals Management se deal add karein.</div>`;
 }
 function setPosCat(c){posCat=c;renderPOSItems()}
-function changeQty(id,d){let m=menu.find(x=>x.id==id),c=cart.find(x=>x.lineType!=="deal"&&x.id==id);if(c){c.qty+=d;if(c.qty<=0)cart=cart.filter(x=>!(x.lineType!=="deal"&&x.id==id))}else if(d>0)cart.push({...m,lineType:"item",qty:d});renderPOS()}
-function setQty(id,val){let v=Math.max(0,Math.floor(Number(val)||0)),m=menu.find(x=>x.id==id),c=cart.find(x=>x.lineType!=="deal"&&x.id==id);if(v<=0){cart=cart.filter(x=>!(x.lineType!=="deal"&&x.id==id))}else if(c){c.qty=v}else cart.push({...m,lineType:"item",qty:v});renderPOS()}
-function addDealToCart(id){let d=deals.find(x=>String(x.id)===String(id));if(!d)return;let c=cart.find(x=>x.lineType==="deal"&&String(x.dealId)===String(id));if(c)c.qty++;else cart.push({id:`deal-${d.id}`,dealId:d.id,lineType:"deal",name:d.name,price:Number(d.price),qty:1,dealItems:d.items.map(x=>({...x}))});renderPOS()}
+function changeQty(id,d){let wasEmpty=!cart.length,m=menu.find(x=>x.id==id),c=cart.find(x=>x.lineType!=="deal"&&x.id==id);if(wasEmpty&&d>0)ensureOrderDateTime();if(c){c.qty+=d;if(c.qty<=0)cart=cart.filter(x=>!(x.lineType!=="deal"&&x.id==id))}else if(d>0)cart.push({...m,lineType:"item",qty:d});renderPOS()}
+function setQty(id,val){let wasEmpty=!cart.length,v=Math.max(0,Math.floor(Number(val)||0)),m=menu.find(x=>x.id==id),c=cart.find(x=>x.lineType!=="deal"&&x.id==id);if(wasEmpty&&v>0)ensureOrderDateTime();if(v<=0){cart=cart.filter(x=>!(x.lineType!=="deal"&&x.id==id))}else if(c){c.qty=v}else cart.push({...m,lineType:"item",qty:v});renderPOS()}
+function addDealToCart(id){let wasEmpty=!cart.length,d=deals.find(x=>String(x.id)===String(id));if(!d)return;if(wasEmpty)ensureOrderDateTime();let c=cart.find(x=>x.lineType==="deal"&&String(x.dealId)===String(id));if(c)c.qty++;else cart.push({id:`deal-${d.id}`,dealId:d.id,lineType:"deal",name:d.name,price:Number(d.price),qty:1,dealItems:d.items.map(x=>({...x}))});renderPOS()}
 function changeDealQty(id,d){let c=cart.find(x=>x.lineType==="deal"&&String(x.dealId)===String(id));if(!c&&d>0)return addDealToCart(id);if(!c)return;if(d>0)c.qty+=d;else{c.qty+=d;if(c.qty<=0)cart=cart.filter(x=>!(x.lineType==="deal"&&String(x.dealId)===String(id)))}renderPOS()}
 function setDealQty(id,val){let v=Math.max(0,Math.floor(Number(val)||0)),c=cart.find(x=>x.lineType==="deal"&&String(x.dealId)===String(id));if(v<=0){cart=cart.filter(x=>!(x.lineType==="deal"&&String(x.dealId)===String(id)))}else if(c)c.qty=v;else addDealToCart(id);renderPOS()}
+function toggleCustomAdd(){
+ let box=document.getElementById("customAddBox");if(!box)return;box.style.display=box.style.display==="none"?"block":"none";
+ if(box.style.display==="block")document.getElementById("customName")?.focus();
+}
+function addCustomToCart(){
+ let wasEmpty=!cart.length,n=(document.getElementById("customName")?.value||"").trim(),a=Number(document.getElementById("customAmount")?.value);
+ if(!n||!Number.isFinite(a)||a<=0)return alert("Custom item ka naam aur valid amount enter karein.");
+ if(wasEmpty)ensureOrderDateTime();
+ cart.push({id:`custom-${Date.now()}-${Math.random()}`,lineType:"custom",name:n,price:a,qty:1});
+ document.getElementById("customName").value="";document.getElementById("customAmount").value="";
+ renderPOS();
+}
 function renderCart(){
-  let sub=cart.reduce((a,c)=>a+Number(c.price||0)*c.qty,0),disc=Math.min(Number(discount.value)||0,sub),total=sub-disc;
+  let sub=cart.reduce((a,c)=>a+Number(c.price||0)*c.qty,0),disc=Math.min(Number(discount.value)||0,sub),tip=Math.max(0,Number(document.getElementById("tip")?.value)||0),total=sub-disc+tip;
   let count=cart.reduce((a,c)=>a+c.qty,0);
   cartList.innerHTML=cart.length?cart.map((c,i)=>`<div class="row">
-    <span><b>${c.lineType==="deal"?"🎁 ":""}${c.name}</b>${c.lineType==="deal"?`<br><small>${(c.dealItems||[]).map(x=>`${x.qty} × ${x.name}`).join(", ")}</small>`:`<br><small>${money(c.price)} each</small>`}</span>
+    <span><b>${c.lineType==="deal"?"🎁 ":""}${c.name}</b>${c.lineType==="deal"?`<br><small>${(c.dealItems||[]).map(x=>`${x.qty} × ${x.name}`).join(", ")}</small>`:`<br><small>${c.lineType==="custom"?"Custom item • ":""}${money(c.price)} each</small>`}</span>
     <span class="qtyControls"><button onclick="changeCart(${i},-1)">−</button><input type="number" min="1" value="${c.qty}" onchange="setCartQty(${i},this.value)"><button onclick="changeCart(${i},1)">+</button></span>
     <span><b>${money(c.price*c.qty)}</b></span>
   </div>`).join(""):`<div class="emptyCart">No items added yet.<br><small>Items ya Deals select karein.</small></div>`;
-  subtotal.textContent=money(sub);discountShow.textContent=money(disc);totalEl(total);cartItemCount.textContent=count;
+  subtotal.textContent=money(sub);discountShow.textContent=money(disc);document.getElementById("tipShow").textContent=money(tip);totalEl(total);cartItemCount.textContent=count;
 }
 function totalEl(v){document.getElementById("total").textContent=money(v)}
 function changeCart(i,d){cart[i].qty+=d;if(cart[i].qty<=0)cart.splice(i,1);renderPOS()}
 function setCartQty(i,val){let v=Math.max(0,Math.floor(Number(val)||0));if(v<=0)cart.splice(i,1);else cart[i].qty=v;renderPOS()}
-function clearCart(){cart=[];discount.value=0;renderPOS()}
+function clearCart(){cart=[];discount.value=0;document.getElementById("tip").value=0;orderDateTimeValue=toDateTimeLocalValue();renderPOS()}
 let editingOrderId=null;
+orderDateTimeValue=toDateTimeLocalValue();
 async function completeOrder(printIt){
  if(!cart.length)return alert("Order empty");
- let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.min(Number(discount.value)||0,sub),total=sub-disc;
+ let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.min(Number(discount.value)||0,sub),tip=Math.max(0,Number(document.getElementById("tip")?.value)||0),total=sub-disc+tip;
  let existingPendingIndex=editingOrderId===null?-1:pendingOrders.findIndex(x=>String(x.id)===String(editingOrderId));
  let existingSalesIndex=editingOrderId===null?-1:sales.findIndex(x=>String(x.id)===String(editingOrderId));
  let existingIndex=existingPendingIndex>=0?existingPendingIndex:existingSalesIndex;
  let oldOrder=existingPendingIndex>=0?pendingOrders[existingPendingIndex]:(existingSalesIndex>=0?sales[existingSalesIndex]:null);
- let order={id:oldOrder?oldOrder.id:Date.now(),date:oldOrder?oldOrder.date:new Date().toISOString(),items:cart.map(c=>({name:c.name,qty:c.qty,price:c.price,lineType:c.lineType||"item",dealId:c.dealId||null,dealItems:c.dealItems||null})),subtotal:sub,discount:disc,total,payment:payment.value,updatedAt:new Date().toISOString()};
+ let selectedDateISO=orderDateTimeISO();
+ let order={id:oldOrder?oldOrder.id:Date.now(),date:selectedDateISO,items:cart.map(c=>({name:c.name,qty:c.qty,price:c.price,lineType:c.lineType||"item",dealId:c.dealId||null,dealItems:c.dealItems||null})),subtotal:sub,discount:disc,tip,total,payment:payment.value,updatedAt:new Date().toISOString()};
  if(existingPendingIndex>=0) pendingOrders[existingPendingIndex]=order;
  else if(existingSalesIndex>=0) sales[existingSalesIndex]=order;
  else pendingOrders.push(order);
  try{await save();}catch(e){return;}
  if(printIt) printReceipt(order);
- editingOrderId=null;cart=[];discount.value=0;payment.value="Cash";
+ editingOrderId=null;cart=[];discount.value=0;document.getElementById("tip").value=0;payment.value="Cash";
  updateEditBanner();renderAll();
- alert("Order save ho gaya. Ye abhi Closing tak Pending Orders mein hai. Raat ko closing par Save & Close Today's Orders dabao.");
+ alert("Order save ho gaya. Ye abhi Closing tak Pending Orders mein hai. Raat ko closing par Save & Close Today's Records dabao.");
 }
 function findOrder(id){
  let p=pendingOrders.find(x=>String(x.id)===String(id));
@@ -734,11 +768,13 @@ function findOrder(id){
 function editOrder(id){
  let found=findOrder(id);if(!found)return;
  let o=found.order;
- editingOrderId=o.id;cart=o.items.map(i=>{if(i.lineType==="deal"){return {id:`deal-${i.dealId||i.name}`,dealId:i.dealId||i.name,lineType:"deal",name:i.name,price:i.price,qty:i.qty,dealItems:i.dealItems||[]}}let m=menu.find(x=>x.name===i.name);return {...(m||{id:Date.now()+Math.random(),name:i.name,cat:"Other",price:i.price}),lineType:"item",price:i.price,qty:i.qty}});
- discount.value=o.discount||0;payment.value=o.payment||"Cash";
+ editingOrderId=o.id;cart=o.items.map(i=>{if(i.lineType==="deal"){return {id:`deal-${i.dealId||i.name}`,dealId:i.dealId||i.name,lineType:"deal",name:i.name,price:i.price,qty:i.qty,dealItems:i.dealItems||[]}}if(i.lineType==="custom")return {id:`custom-${Date.now()}-${Math.random()}`,lineType:"custom",name:i.name,price:i.price,qty:i.qty};
+ let m=menu.find(x=>x.name===i.name);return {...(m||{id:Date.now()+Math.random(),name:i.name,cat:"Other",price:i.price}),lineType:"item",price:i.price,qty:i.qty}});
+ orderDateTimeValue=toDateTimeLocalValue(new Date(o.date));
+ discount.value=o.discount||0;document.getElementById("tip").value=o.tip||0;payment.value=o.payment||"Cash";
  updateEditBanner();showPage("pos",Array.from(document.querySelectorAll('nav button')).find(b=>b.textContent.includes('POS / Billing')));renderPOS();window.scrollTo({top:0,behavior:"smooth"});
 }
-function cancelEditOrder(){editingOrderId=null;cart=[];discount.value=0;payment.value="Cash";updateEditBanner();renderPOS()}
+function cancelEditOrder(){editingOrderId=null;cart=[];discount.value=0;document.getElementById("tip").value=0;payment.value="Cash";orderDateTimeValue=toDateTimeLocalValue();updateEditBanner();renderPOS()}
 function updateEditBanner(){
  let b=document.getElementById("editOrderBanner"),t=document.getElementById("editOrderText");
  if(!b)return;
@@ -755,18 +791,31 @@ async function deleteOrder(id){
  try{await save();renderAll();alert(`Bill #${id} delete ho gaya.`);}catch(e){}
 }
 async function closeDayAndSaveHistory(){
- if(!pendingOrders.length)return alert("Koi Pending Order nahi hai. Closing ke liye save karne ko kuch nahi.");
- let total=pendingOrders.reduce((a,o)=>a+Number(o.total||0),0);
- if(!confirm(`${pendingOrders.length} pending order(s), total ${money(total)}, ko Order History mein permanently save karna hai?\n\nYe kaam raat ki closing (1–2 AM) par karein.`))return;
- let closingBatch=pendingOrders.map(o=>({...o,closedAt:new Date().toISOString()}));
- sales=[...sales,...closingBatch];
- pendingOrders=[];
- try{await save();renderAll();alert("Closing complete! Aaj ke orders Order History aur Reports mein save ho gaye hain.");}catch(e){
-   pendingOrders=closingBatch;
-   sales=sales.filter(o=>!closingBatch.some(c=>String(c.id)===String(o.id)));
-   cacheLocalData();
+ let po=pendingOrders.length,pp=pendingPurchases.length,pe=pendingExpenses.length;
+ if(!po&&!pp&&!pe)return alert("Aaj koi pending Sales, Purchase ya Expense nahi hai. Closing ke liye save karne ko kuch nahi.");
+ let salesTotal=pendingOrders.reduce((a,o)=>a+Number(o.total||0),0),purchaseTotal=pendingPurchases.reduce((a,o)=>a+Number(o.cost||0),0),expenseTotal=pendingExpenses.reduce((a,o)=>a+Number(o.amount||0),0);
+ if(!confirm(`Closing par save hoga:
+Sales: ${po} order(s) — ${money(salesTotal)}
+Purchases: ${pp} — ${money(purchaseTotal)}
+Expenses: ${pe} — ${money(expenseTotal)}
+
+Closing confirm karein?`))return;
+ let closedAt=new Date().toISOString();
+ let closingSales=pendingOrders.map(o=>({...o,closedAt}));
+ let closingPurchases=pendingPurchases.map(x=>({...x,closedAt}));
+ let closingExpenses=pendingExpenses.map(x=>({...x,closedAt}));
+ sales=[...sales,...closingSales];
+ purchases=[...purchases,...closingPurchases];
+ expenses=[...expenses,...closingExpenses];
+ pendingOrders=[];pendingPurchases=[];pendingExpenses=[];
+ try{await save();renderAll();alert("Closing complete! Sales, Purchases aur Expenses aaj ke saved records mein chale gaye.");}catch(e){
+   sales=sales.filter(o=>!closingSales.some(c=>String(c.id)===String(o.id)));
+   purchases=purchases.filter(x=>!closingPurchases.some(c=>String(c.id)===String(x.id)));
+   expenses=expenses.filter(x=>!closingExpenses.some(c=>String(c.id)===String(x.id)));
+   pendingOrders=closingSales;pendingPurchases=closingPurchases;pendingExpenses=closingExpenses;cacheLocalData();
  }
 }
+
 function renderOrderHistory(){
  let pendingEl=document.getElementById("pendingOrdersSection"),list=document.getElementById("orderHistoryList");if(!list)return;
  let pendingRows=pendingOrders.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -778,9 +827,13 @@ function renderOrderHistory(){
 function dateKey(iso){let d=new Date(iso);return Number.isNaN(d.getTime())?String(iso||"").slice(0,10):localDateString(d)}
 function printReceipt(o){
  reportPrint.classList.remove("show");receipt.classList.remove("hide");
- receipt.innerHTML=`<h2>STUDENT BITE</h2><p>Eat • Study • Repeat</p><p>${new Date(o.date).toLocaleString()}</p><p>Bill #${o.id}</p><table><tr><th>Item</th><th>Qty</th><th>Amount</th></tr>${o.items.map(i=>`<tr><td>${i.name}</td><td>${i.qty}</td><td>${money(i.qty*i.price)}</td></tr>`).join("")}</table><p>Subtotal: ${money(o.subtotal)}</p><p>Discount: ${money(o.discount)}</p><h3>Total: ${money(o.total)}</h3><p>Payment: ${o.payment}</p><p>Thank you!</p>`;
+ receipt.innerHTML=`<h2>STUDENT BITE</h2><p>Eat • Study • Repeat</p><p>${new Date(o.date).toLocaleString()}</p><p>Bill #${o.id}</p><table><tr><th>Item</th><th>Qty</th><th>Amount</th></tr>${o.items.map(i=>`<tr><td>${i.name}</td><td>${i.qty}</td><td>${money(i.qty*i.price)}</td></tr>`).join("")}</table><p>Subtotal: ${money(o.subtotal)}</p><p>Discount: ${money(o.discount)}</p><p>Tip: ${money(o.tip||0)}</p><h3>Total: ${money(o.total)}</h3><p>Payment: ${o.payment}</p><p>Thank you!</p>`;
  window.print();
 }
+let editingStockIndex=null;
+function editStock(i){let s=stock[i];if(!s)return;editingStockIndex=i;stockName.value=s.name;stockQty.value=s.qty;stockUnit.value=s.unit;stockMin.value=s.min;document.getElementById("stockFormBtn").textContent="Update Stock";document.getElementById("stockCancelBtn").style.display="inline-block";stockName.scrollIntoView({behavior:"smooth",block:"center"})}
+function cancelEditStock(){editingStockIndex=null;stockName.value=stockQty.value=stockUnit.value=stockMin.value="";document.getElementById("stockFormBtn").textContent="Add / Update";document.getElementById("stockCancelBtn").style.display="none"}
+function deleteStock(i){let s=stock[i];if(!s)return;if(!confirm(`Inventory item "${s.name}" delete karna hai?`))return;stock.splice(i,1);if(editingStockIndex===i)cancelEditStock();save();renderAll()}
 let editingMenuId=null;
 function restoreDefaultMenu(){
  if(!confirm("Default 17 menu items load karni hain? Yeh maujooda menu list ki jagah le lega."))return;
@@ -831,8 +884,7 @@ function renderDeals(){
 
 function addStock(){
  let n=stockName.value.trim(),q=Number(stockQty.value),u=stockUnit.value.trim(),min=Number(stockMin.value)||0;if(!n||!Number.isFinite(q)||q<0)return alert("Item aur valid quantity required");
- let s=stock.find(x=>x.name.toLowerCase()===n.toLowerCase());
- if(s){s.qty=q;s.unit=u||s.unit;s.min=min}else stock.push({name:n,qty:q,unit:u||"pcs",min});
+ if(editingStockIndex!==null){let s=stock[editingStockIndex];if(s){s.name=n;s.qty=q;s.unit=u||s.unit;s.min=min}cancelEditStock()}else{let s=stock.find(x=>x.name.toLowerCase()===n.toLowerCase());if(s){s.qty=q;s.unit=u||s.unit;s.min=min}else stock.push({name:n,qty:q,unit:u||"pcs",min})}
  stockName.value=stockQty.value=stockUnit.value=stockMin.value="";save();renderAll()
 }
 function adjustStock(i,d){
@@ -841,25 +893,52 @@ function adjustStock(i,d){
  stock[i].qty=Math.round((stock[i].qty+d*a)*100)/100;save();renderAll()
 }
 function renderStock(){
- stockTable.innerHTML=stock.map((s,i)=>`<tr><td>${s.name}</td><td>${s.qty}</td><td>${s.unit}</td><td>${s.min}</td><td><button class="yellow" onclick="adjustStock(${i},1)">+ Add</button> <button onclick="adjustStock(${i},-1)">− Minus</button></td><td><span class="badge ${s.qty<=s.min?'low':'ok'}">${s.qty<=s.min?'LOW':'OK'}</span></td></tr>`).join("")||`<tr><td colspan="6">No inventory items</td></tr>`;
+ stockTable.innerHTML=stock.map((s,i)=>`<tr><td>${s.name}</td><td>${s.qty}</td><td>${s.unit}</td><td>${s.min}</td><td><button class="yellow" onclick="adjustStock(${i},1)">+ Add</button> <button onclick="adjustStock(${i},-1)">− Minus</button></td><td><span class="badge ${s.qty<=s.min?'low':'ok'}">${s.qty<=s.min?'LOW':'OK'}</span></td><td class="actions"><button class="yellow" onclick="editStock(${i})">Edit</button><button class="danger" onclick="deleteStock(${i})">Delete</button></td></tr>`).join("")||`<tr><td colspan="7">No inventory items</td></tr>`;
  lowStock.innerHTML=stock.filter(s=>s.qty<=s.min).map(s=>`⚠️ ${s.name}: ${s.qty} ${s.unit}`).join("<br>")||"No low-stock items."
 }
 
+let editingPurchaseId=null;
 function addPurchase(){
  let n=purchaseItem.value.trim(),q=Number(purchaseQty.value),u=purchaseUnit.value.trim(),cost=Number(purchaseCost.value),sup=purchaseSupplier.value.trim()||"-";
  if(!n||q<=0||cost<0)return alert("Item, quantity aur cost enter karein.");
- purchases.push({date:new Date().toISOString(),item:n,qty:q,unit:u||"pcs",cost,supplier:sup});
- let s=stock.find(x=>x.name.toLowerCase()===n.toLowerCase());
- if(s)s.qty=Math.round((s.qty+q)*100)/100;else stock.push({name:n,qty:q,unit:u||"pcs",min:0});
+ if(editingPurchaseId!==null){
+   let src=pendingPurchases.find(x=>String(x.id)===String(editingPurchaseId))||purchases.find(x=>String(x.id)===String(editingPurchaseId));
+   if(src){src.item=n;src.qty=q;src.unit=u||"pcs";src.cost=cost;src.supplier=sup;}
+   editingPurchaseId=null;document.getElementById("purchaseSaveBtn").textContent="Save Purchase";document.getElementById("purchaseCancelBtn").style.display="none";
+ }else{
+   pendingPurchases.push({id:Date.now(),date:new Date().toISOString(),item:n,qty:q,unit:u||"pcs",cost,supplier:sup});
+   let s=stock.find(x=>x.name.toLowerCase()===n.toLowerCase());
+   if(s)s.qty=Math.round((s.qty+q)*100)/100;else stock.push({name:n,qty:q,unit:u||"pcs",min:0});
+ }
  purchaseItem.value=purchaseQty.value=purchaseUnit.value=purchaseCost.value=purchaseSupplier.value="";save();renderAll()
 }
-function renderPurchases(){purchaseTable.innerHTML=purchases.slice().reverse().map(p=>`<tr><td>${new Date(p.date).toLocaleDateString()}</td><td>${p.item}</td><td>${p.qty} ${p.unit}</td><td>${money(p.cost)}</td><td>${p.supplier}</td></tr>`).join("")||`<tr><td colspan="5">No purchases</td></tr>`}
+function editPurchase(id){let x=pendingPurchases.find(v=>String(v.id)===String(id))||purchases.find(v=>String(v.id)===String(id));if(!x)return;editingPurchaseId=x.id;purchaseItem.value=x.item;purchaseQty.value=x.qty;purchaseUnit.value=x.unit;purchaseCost.value=x.cost;purchaseSupplier.value=x.supplier;document.getElementById("purchaseSaveBtn").textContent="Update Purchase";document.getElementById("purchaseCancelBtn").style.display="inline-block";showPage("purchases",Array.from(document.querySelectorAll("nav button")).find(b=>b.textContent.includes("Purchases")))}
+function cancelEditPurchase(){editingPurchaseId=null;purchaseItem.value=purchaseQty.value=purchaseUnit.value=purchaseCost.value=purchaseSupplier.value="";document.getElementById("purchaseSaveBtn").textContent="Save Purchase";document.getElementById("purchaseCancelBtn").style.display="none"}
+function deletePurchase(id){if(!confirm("Ye purchase delete karni hai?"))return;pendingPurchases=pendingPurchases.filter(x=>String(x.id)!==String(id));purchases=purchases.filter(x=>String(x.id)!==String(id));save();renderAll()}
 
-function addExpense(){let n=expName.value.trim(),a=Number(expAmount.value),c=expCat.value;if(!n||a<=0)return alert("Description and valid amount required");expenses.push({date:new Date().toISOString(),name:n,cat:c,amount:a});expName.value=expAmount.value="";save();renderAll()}
-function renderExpenses(){expTable.innerHTML=expenses.slice().reverse().map(e=>`<tr><td>${new Date(e.date).toLocaleDateString()}</td><td>${e.name}</td><td>${e.cat}</td><td>${money(e.amount)}</td></tr>`).join("")||`<tr><td colspan="4">No expenses</td></tr>`}
+function renderPurchases(){
+ let rows=[...pendingPurchases.map(x=>({...x,_pending:true})),...purchases].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ purchaseTable.innerHTML=rows.map(p=>`<tr><td>${new Date(p.date).toLocaleDateString()} ${p._pending?'<span class="badge low">Pending</span>':''}</td><td>${p.item}</td><td>${p.qty} ${p.unit}</td><td>${money(p.cost)}</td><td>${p.supplier}</td><td class="actions"><button class="yellow" onclick="editPurchase(${p.id})">Edit</button><button class="danger" onclick="deletePurchase(${p.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="6">No purchases</td></tr>`
+}
+
+let editingExpenseId=null;
+function addExpense(){
+ let n=expName.value.trim(),a=Number(expAmount.value),c=expCat.value;if(!n||a<=0)return alert("Description and valid amount required");
+ if(editingExpenseId!==null){let x=pendingExpenses.find(v=>String(v.id)===String(editingExpenseId))||expenses.find(v=>String(v.id)===String(editingExpenseId));if(x){x.name=n;x.amount=a;x.cat=c}editingExpenseId=null;document.getElementById("expenseSaveBtn").textContent="Add Expense";document.getElementById("expenseCancelBtn").style.display="none"}
+ else pendingExpenses.push({id:Date.now(),date:new Date().toISOString(),name:n,cat:c,amount:a});
+ expName.value=expAmount.value="";save();renderAll()
+}
+function editExpense(id){let x=pendingExpenses.find(v=>String(v.id)===String(id))||expenses.find(v=>String(v.id)===String(id));if(!x)return;editingExpenseId=x.id;expName.value=x.name;expAmount.value=x.amount;expCat.value=x.cat;document.getElementById("expenseSaveBtn").textContent="Update Expense";document.getElementById("expenseCancelBtn").style.display="inline-block";showPage("expenses",Array.from(document.querySelectorAll("nav button")).find(b=>b.textContent.includes("Expenses")))}
+function cancelEditExpense(){editingExpenseId=null;expName.value=expAmount.value="";document.getElementById("expenseSaveBtn").textContent="Add Expense";document.getElementById("expenseCancelBtn").style.display="none"}
+function deleteExpense(id){if(!confirm("Ye expense delete karna hai?"))return;pendingExpenses=pendingExpenses.filter(x=>String(x.id)!==String(id));expenses=expenses.filter(x=>String(x.id)!==String(id));save();renderAll()}
+
+function renderExpenses(){
+ let rows=[...pendingExpenses.map(x=>({...x,_pending:true})),...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date));
+ expTable.innerHTML=rows.map(e=>`<tr><td>${new Date(e.date).toLocaleDateString()} ${e._pending?'<span class="badge low">Pending</span>':''}</td><td>${e.name}</td><td>${e.cat}</td><td>${money(e.amount)}</td><td class="actions"><button class="yellow" onclick="editExpense(${e.id})">Edit</button><button class="danger" onclick="deleteExpense(${e.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="5">No expenses</td></tr>`
+}
 
 function dashboard(){
- let t=today(),savedToday=sales.filter(x=>dateKey(x.date)===t),pendingToday=pendingOrders.filter(x=>dateKey(x.date)===t),s=[...savedToday,...pendingToday].reduce((a,x)=>a+Number(x.total||0),0),p=purchases.filter(x=>dateKey(x.date)===t).reduce((a,x)=>a+Number(x.cost||0),0),e=expenses.filter(x=>dateKey(x.date)===t).reduce((a,x)=>a+Number(x.amount||0),0);
+ let t=today(),savedToday=sales.filter(x=>dateKey(x.date)===t),pendingToday=pendingOrders.filter(x=>dateKey(x.date)===t),s=[...savedToday,...pendingToday].reduce((a,x)=>a+Number(x.total||0),0),p=[...purchases,...pendingPurchases].filter(x=>dateKey(x.date)===t).reduce((a,x)=>a+Number(x.cost||0),0),e=[...expenses,...pendingExpenses].filter(x=>dateKey(x.date)===t).reduce((a,x)=>a+Number(x.amount||0),0);
  dSales.textContent=money(s);dPurchases.textContent=money(p);dExpenses.textContent=money(e);dNet.textContent=money(s-p-e);dOrders.textContent=savedToday.length+pendingToday.length
 }
 function syncReportInputs(){
@@ -909,11 +988,11 @@ function printReport(){
 }
 
 function exportBackup(){
- let data={version:3,exportedAt:new Date().toISOString(),menu,deals,stock,purchases,expenses,sales};
+ let data={version:4,exportedAt:new Date().toISOString(),menu,deals,stock,purchases,expenses,sales,pendingOrders,pendingPurchases,pendingExpenses};
  let blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`student-bite-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)
 }
 function importBackup(ev){
- let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!Array.isArray(d.menu)||!Array.isArray(d.sales))throw Error();menu=d.menu;deals=d.deals||DEFAULT_DEALS.map(x=>JSON.parse(JSON.stringify(x)));stock=d.stock||[];purchases=d.purchases||[];expenses=d.expenses||[];sales=d.sales;save();renderAll();alert("Backup restored successfully.")}catch(e){alert("Invalid Student Bite backup file.")}};r.readAsText(f);ev.target.value=""
+ let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!Array.isArray(d.menu)||!Array.isArray(d.sales))throw Error();menu=d.menu;deals=d.deals||DEFAULT_DEALS.map(x=>JSON.parse(JSON.stringify(x)));stock=d.stock||[];purchases=d.purchases||[];expenses=d.expenses||[];sales=d.sales;pendingOrders=d.pendingOrders||[];pendingPurchases=d.pendingPurchases||[];pendingExpenses=d.pendingExpenses||[];save();renderAll();alert("Backup restored successfully.")}catch(e){alert("Invalid Student Bite backup file.")}};r.readAsText(f);ev.target.value=""
 }
 function exportCSV(){
  let rows=[["Date","Bill ID","Items","Payment","Total"]];sales.forEach(o=>rows.push([o.date,o.id,o.items.map(i=>`${i.name} x${i.qty}`).join(" | "),o.payment,o.total]));
@@ -925,7 +1004,7 @@ async function clearAllData(){
    if(firebaseReady){
      await db.ref(DB_PATH).remove();
    }
-   ["sb_menu","sb_stock","sb_purchases","sb_expenses","sb_sales","sb_pending_orders"].forEach(k=>localStorage.removeItem(k));
+   ["sb_menu","sb_stock","sb_purchases","sb_expenses","sb_sales","sb_pending_orders","sb_pending_purchases","sb_pending_expenses"].forEach(k=>localStorage.removeItem(k));
    localStorage.removeItem("sb_logged");
    alert("Business data successfully delete ho gaya.");
    location.reload();
